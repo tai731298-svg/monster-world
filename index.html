@@ -1,51 +1,155 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Vietnam Monster World</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+    body {
+      background-color: #0f172a;
+      color: #f8fafc;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 12px;
+    }
+    #game-wrapper {
+      width: 100%;
+      max-width: 680px;
+      background: #1e293b;
+      border-radius: 16px;
+      padding: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+      border: 1px solid #334155;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    #header {
+      width: 100%;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+    #map-title {
+      font-size: 20px;
+      font-weight: 800;
+      color: #fbbf24;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    canvas {
+      width: 100%;
+      max-width: 640px;
+      height: auto;
+      border-radius: 12px;
+      border: 3px solid #f59e0b;
+      display: block;
+      background-color: #000;
+      image-rendering: pixelated;
+    }
+    #dialog-box {
+      width: 100%;
+      margin-top: 12px;
+      padding: 12px 16px;
+      background: #0f172a;
+      border: 2px solid #334155;
+      border-radius: 10px;
+      font-size: 14px;
+      color: #cbd5e1;
+      text-align: center;
+    }
+    #dpad {
+      display: grid;
+      grid-template-columns: repeat(3, 48px);
+      grid-template-rows: repeat(3, 48px);
+      gap: 6px;
+      margin-top: 14px;
+    }
+    .btn-pad {
+      background: #334155;
+      border: 2px solid #475569;
+      border-radius: 10px;
+      color: #f8fafc;
+      font-size: 18px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+    }
+    .btn-pad:active {
+      background: #f59e0b;
+      color: #0f172a;
+    }
+    #btn-up { grid-column: 2; grid-row: 1; }
+    #btn-left { grid-column: 1; grid-row: 2; }
+    #btn-right { grid-column: 3; grid-row: 2; }
+    #btn-down { grid-column: 2; grid-row: 3; }
+  </style>
+</head>
+<body>
+
+<div id="game-wrapper">
+  <div id="header">
+    <div id="map-title">Hà Nội – Monster World</div>
+  </div>
+
+  <canvas id="gameCanvas" width="640" height="480"></canvas>
+
+  <div id="dialog-box">
+    <span id="status-text">Hãy di chuyển sang mép bên phải để sang Vịnh Hạ Long!</span>
+  </div>
+
+  <div id="dpad">
+    <div class="btn-pad" id="btn-up">▲</div>
+    <div class="btn-pad" id="btn-left">◄</div>
+    <div class="btn-pad" id="btn-right">►</div>
+    <div class="btn-pad" id="btn-down">▼</div>
+  </div>
+</div>
+
 <script>
-const canvas = document.getElementById('gameCanvas');
-const ctx = canvas.getContext('2d');
-
-// 1. Khai báo danh sách đường dẫn ảnh (Lưu ý: Dùng đường dẫn tương đối, không có dấu / ở đầu)
-const assetsToLoad = {
-  tile_grass: 'tileset/vietnam_town.png',
-  tile_main: 'tileset/tileset.png',
-  bg_mekong: 'tileset/mekong_delta.png'
-};
-
-const images = {};
-let loadedCount = 0;
-const totalAssets = Object.keys(assetsToLoad).length;
-
-// 2. Preloader: Tải toàn bộ ảnh trước khi vẽ
-function loadAssets(onComplete) {
-  for (let key in assetsToLoad) {
-    images[key] = new Image();
-    images[key].src = assetsToLoad[key];
-    images[key].onload = () => {
-      loadedCount++;
-      if (loadedCount === totalAssets) {
-        onComplete(); // Tải xong hết mới gọi hàm khởi chạy game
-      }
-    };
-    images[key].onerror = () => {
-      console.error("Lỗi không tải được file ảnh:", assetsToLoad[key]);
-    };
+window.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('gameCanvas');
+  if (!canvas) {
+    console.error("Không tìm thấy thẻ canvas!");
+    return;
   }
-}
+  const ctx = canvas.getContext('2d');
 
-// 3. Hàm vẽ Game
-function drawMap() {
-  // Clear khung vẽ
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  const TILE_SIZE = 40;
+  const COLS = 16;
+  const ROWS = 12;
 
-  // Ví dụ vẽ ảnh tile lên canvas
-  if (images.tile_main) {
-    ctx.drawImage(images.tile_main, 0, 0);
-  }
-  
-  // Game Loop của bạn ở đây...
-}
+  // 1. Quản lý tải ảnh (Preloader tránh màn hình đen)
+  const assetsToLoad = {
+    tileset: 'tileset/tileset.png',
+    mekong: 'tileset/mekong_delta.png',
+    vietnam_town: 'tileset/vietnam_town.png'
+  };
 
-// 4. Bắt đầu game sau khi đã load xong 100% ảnh
-loadAssets(() => {
-  console.log("Đã tải xong toàn bộ tài nguyên!");
-  drawMap();
-});
-</script>
+  const images = {};
+  let loadedAssets = 0;
+  const totalAssets = Object.keys(assetsToLoad).length;
+
+  function loadAllAssets(callback) {
+    for (let key in assetsToLoad) {
+      images[key] = new Image();
+      images[key].src = assetsToLoad[key];
+      images[key].onload = () => {
+        loadedAssets++;
+        if (loadedAssets === totalAssets) {
+          callback();
+        }
+      };
+      images
